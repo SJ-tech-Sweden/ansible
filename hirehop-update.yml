@@ -1,0 +1,22 @@
+---
+- hosts: django_script
+  tasks:
+    - name: Upgrade git
+      ansible.builtin.shell: |
+        cd hirehop/Hirehop-tools/hirehop/
+        git pull
+      args:
+        chdir: hirehop/Hirehop-tools/hirehop/
+        warn: no
+
+    - name: Docker rebuild
+      ansible.builtin.shell: docker-compose build --no-cache
+      args:
+        chdir: hirehop/Hirehop-tools/hirehop/
+        warn: no
+
+    - name: Docker restart
+      ansible.builtin.shell: docker-compose up -d
+      args:
+        chdir: hirehop/Hirehop-tools/hirehop/
+

@@ -1,0 +1,46 @@
+---
+- hosts: debian_containers
+  pre_tasks:
+    - name: include vault
+      ansible.builtin.include_vars:
+        file: secrets.yml
+  tasks:
+    - name: Update apt repo and cache on all Debian/Ubuntu boxes
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+
+    - name: Install sudo
+      apt: 
+       name: sudo
+       
+    - name: Install gpg
+      apt: 
+       name: gpg
+  
+    - name: Install curl
+      apt:
+       name: curl
+
+    - name: Install jq
+      apt:
+       name: jq
+
+    - name: Install rsyslog
+      apt:
+       name: rsyslog
+
+    - name: Start service rsyslog, if not started
+      ansible.builtin.service:
+        name: rsyslog
+        state: started
+
+
+    - name: Create graylog.conf
+      copy:
+        dest: "/etc/rsyslog.d/60-graylog.conf"
+        content: |
+          {{ graylog.rsyslog_format }}
+
+    - name: Restart rsyslog
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted

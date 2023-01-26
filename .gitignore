@@ -1,0 +1,7 @@
+secrets*
+vault_password*
+#Not finished playbooks
+graylog-install.yml
+nginx-reverse.yml
+truenas-update/*
+wordpress-ansible/*

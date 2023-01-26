@@ -1,0 +1,38 @@
+---
+- hosts: netbox
+  pre_tasks:
+    - name: include vault
+      ansible.builtin.include_vars:
+        file: secrets.yml
+  tasks:
+    - name: Create new container snapshot
+      local_action:
+        module: community.general.proxmox_snap
+        api_user: "{{ proxmox.api_user }}"
+        api_password: "{{ proxmox.api_password }}"
+        api_host: "{{ proxmox.api_host }}"
+        vmid: "{{ proxmox.vm_id }}"
+        state: present
+        snapname: pre-netbox-upgrades
+
+    - name: Upgrade git
+      ansible.builtin.shell: |
+        cd /opt/netbox
+        git checkout master
+      args:
+        chdir: /opt/netbox
+        warn: no
+
+    - name: Pull origin
+      ansible.builtin.shell: git pull origin master
+      args:
+        chdir: /opt/netbox
+        warn: no
+
+    - name: Run upgrade script
+      ansible.builtin.shell:  ./upgrade.sh
+      args:
+        chdir: /opt/netbox
+
+    - name: Restart netbox
+      ansible.builtin.shell: systemctl restart netbox netbox-rq

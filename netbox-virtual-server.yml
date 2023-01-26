@@ -1,0 +1,23 @@
+
+- name: "Test NetBox modules"
+  connection: local
+  hosts: localhost
+  gather_facts: False
+
+  pre_tasks:
+    - name: include vault
+      ansible.builtin.include_vars:
+        file: secrets.yml
+  tasks:
+    - name: Create virtual machine within NetBox with only required information
+      netbox.netbox.netbox_virtual_machine:
+        netbox_url: "{{ netbox.url }}"
+        netbox_token: "{{ netbox.token }}"
+        data:
+          name: aszabbix02
+          cluster: svs7-pv
+          vcpus: 2
+          memory: 1024
+          disk: 100
+          site: svs7 
+        state: present

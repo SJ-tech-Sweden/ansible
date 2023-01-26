@@ -1,0 +1,151 @@
+---
+- hosts: awx
+  tasks:
+    - name: Update apt repo and cache on all Debian/Ubuntu boxes
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+
+    - name: Upgrade all packages on servers
+      apt: upgrade=dist force_apt_get=yes
+
+    - name: Check if a reboot is needed on all servers
+      register: reboot_required_file
+      stat: path=/var/run/reboot-required get_md5=no
+      ignore_errors: yes
+
+    - name: Reboot the box if kernel updated
+      reboot:
+        msg: "Reboot initiated by Ansible for kernel updates"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: uptime
+      when: reboot_required_file.stat.exists
+
+    - name: Update apt repo and cache on all Debian/Ubuntu boxes
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+
+    - name: Install sudo
+      apt: 
+       name: sudo
+       
+    - name: Install gpg
+      apt: 
+       name: gpg
+  
+    - name: Install curl
+      apt:
+       name: curl
+
+    - name: Install jq
+      apt:
+       name: jq
+
+    - name: Download k3s installation script
+      shell: 
+        cmd: |
+          curl -sfL https://get.k3s.io | bash -
+          chmod 644 /etc/rancher/k3s/k3s.yaml
+
+    - name: Control if kubernetes installation worked
+      shell: kubectl get nodes
+      register: kubernet_nodes
+
+    - name: Print result of installation script
+      ansible.builtin.debug:
+        var: kubernet_nodes
+
+    - name: Check kubernetes version
+      shell: kubectl version --short
+      register: kubernet_version
+
+    - name: Print result of installation script
+      ansible.builtin.debug:
+        var: kubernet_version
+
+    - name: Update apt repo and cache on all Debian/Ubuntu boxes
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+
+    - name: Install git
+      apt:
+       name: git
+
+    - name: Install build-essential
+      apt:
+       name: build-essential
+
+    - name: Download awx
+      shell: git clone https://github.com/ansible/awx-operator.git
+
+    - name: Create Namespace
+      shell:
+        cmd: |
+          export NAMESPACE=awx
+          kubectl create ns ${NAMESPACE}
+          kubectl config set-context --current --namespace=$NAMESPACE 
+
+    - name: Save latest release and deploy awx-operator
+      shell:
+        cmd: |
+          cd awx-operator/
+          RELEASE_TAG=`curl -s https://api.github.com/repos/ansible/awx-operator/releases/latest | grep tag_name | cut -d '"' -f 4`
+          echo $RELEASE_TAG
+          git checkout $RELEASE_TAG
+          export NAMESPACE=awx
+          make deploy
+
+    - name: Create static data PVC
+      shell:
+        cmd: |
+          cd
+          cat <<EOF | kubectl create -f -
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: static-data-pvc
+            namespace: awx
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            storageClassName: local-path
+            resources:
+              requests:
+                storage: 5Gi
+          EOF
+
+    - name: Create pod using static data
+      shell: kubectl get pvc -n awx
+
+    - name: Create awx-deploy.yml
+      copy:
+        dest: "/root/awx-deploy.yml"
+        content: |
+          ---
+          apiVersion: awx.ansible.com/v1beta1
+          kind: AWX
+          metadata:
+            name: awx
+          spec:
+            service_type: nodeport
+            projects_persistence: true
+            projects_storage_access_mode: ReadWriteOnce
+            web_extra_volume_mounts: |
+              - name: static-data
+                mountPath: /var/lib/projects
+            extra_volumes: |
+              - name: static-data
+                persistentVolumeClaim:
+                  claimName: static-data-pvc
+
+
+    - name: Apply configuration manifest file
+      shell: kubectl apply -f awx-deploy.yml
+          
+
+
+
+
+
+  roles:
+  - role: claranet.motd
+    motd_template: "{{ playbook_dir }}/templates/dynmotd.j2"
