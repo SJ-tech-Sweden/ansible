@@ -44,3 +44,11 @@
       ansible.builtin.service:
         name: rsyslog
         state: restarted
+        
+    - name: Add Netdata
+      command: "{{ netdata.install_command }}"
+        register: command_result
+
+    - name: Display command output
+      debug:
+        var: command_result.stdout_lines
