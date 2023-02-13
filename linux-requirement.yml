@@ -47,7 +47,7 @@
         
     - name: Add Netdata
       command: "{{ netdata.install_command }}"
-        register: command_result
+      register: command_result
 
     - name: Display command output
       debug:
