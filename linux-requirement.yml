@@ -48,7 +48,7 @@
     - name: Run command
       shell: "{{ netdata.install_command }}"
       register: shell_result
-      when: netdata_install_command is defined
+      when: netdata.install_command is defined
 
     - name: Display command output
       debug:
