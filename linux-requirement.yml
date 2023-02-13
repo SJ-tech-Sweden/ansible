@@ -45,10 +45,11 @@
         name: rsyslog
         state: restarted
         
-    - name: Add Netdata
-      command: "{{ netdata.install_command }}"
-      register: command_result
+    - name: Run command
+      shell: "{{ netdata.install_command }}"
+      register: shell_result
+      when: netdata_install_command is defined
 
     - name: Display command output
       debug:
-        var: command_result.stdout_lines
+        var: shell_result.stdout_lines
