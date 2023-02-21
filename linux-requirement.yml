@@ -1,5 +1,5 @@
 ---
-- hosts: debian_containers
+- hosts: tags_linux_servers
   pre_tasks:
     - name: include vault
       ansible.builtin.include_vars:
@@ -45,11 +45,18 @@
         name: rsyslog
         state: restarted
         
-    - name: Run command
-      shell: "{{ netdata.install_command }}"
-      register: shell_result
-      when: netdata.install_command is defined
+    - name: Add zabbix agent
+      apt:
+        name: zabbix-agent
 
-    - name: Display command output
-      debug:
-        var: shell_result.stdout_lines
+    - name: Configure zabbix agent
+      lineinfile:
+        dest: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^Server='
+        line: 'Server={{ zabbix.server_ip }}'
+
+    - name: Restart Zabbix agent service
+      service:
+        name: zabbix-agent
+        state: restarted
+        enabled: true
