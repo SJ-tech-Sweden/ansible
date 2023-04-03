@@ -1,0 +1,25 @@
+---
+- name: Delete LXC container in Proxmox
+  vars_files:
+   - secrets.yml
+  vars:
+    api_user: "{{ proxmox.api_user }}" # Proxmox user
+    api_password: "{{ proxmox.api_password }}" # Password in plaintext !!!
+    api_host: "{{ proxmox.api_host }}" # Proxmox hostname
+    
+  vars_prompt:
+    - name: vmid
+      prompt: What vmid should be deleted?
+      private: false
+
+
+  hosts: tags_proxmox
+  tasks:
+
+  - name: 'Delete Container'
+    proxmox:
+      vmid: '{{ vmid }}'
+      api_user: '{{ api_user }}'
+      api_password: '{{ api_password }}'
+      api_host: '{{ api_host }}'
+      state: absent
