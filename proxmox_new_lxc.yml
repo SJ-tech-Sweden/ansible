@@ -50,7 +50,7 @@
       private: false
 
 
-  hosts: proxmox
+  hosts: tags_proxmox
   tasks:
 
   - name: Create password in bitwarden
@@ -111,6 +111,9 @@
         site: svs7
         platform: Debian
         tenant: "{{ tenant }}"
+        tags:
+          - debian_containers
+          - linux_servers
       state: present
 
   - name: Gather MAC address
@@ -185,3 +188,6 @@
         primary_ip4: '{{ ipv4_adress }}'
         primary_ip6: '{{ ipv6_adress }}'
       state: present
+
+- name: Install linux requirement
+  ansible.builtin.import_playbook: linux-requirement.yml

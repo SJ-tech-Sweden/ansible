@@ -1,5 +1,5 @@
 ---
-- hosts: django_script
+- hosts: tags_django_scripts
   tasks:
     - name: Upgrade git
       ansible.builtin.shell: |
