@@ -8,9 +8,12 @@
   vars:
     netbox_url: "{{ netbox.url }}/api"
     netbox_token: "{{ netbox.token }}"
+    cloudflare_api_key: "{{ cloudflare.account_api_key }}"
+    cloudflare_api_email: "{{ cloudflare.account_email }}"
+    cloudflare_zones_url: "https://api.cloudflare.com/client/v4/zones"
 
   tasks:
-    - name: Get all services
+    - name: Get all services from netbox
       uri:
         url: "{{ netbox_url }}/ipam/services/"
         method: GET
@@ -25,6 +28,9 @@
       set_fact:
         netbox_services: "{{ services_response.json.results | json_query('[?custom_fields.nginx==`true`]') }}"
       delegate_to: localhost
+
+    - debug:
+        var: netbox_services
 
     - name: Copy Caddyfile template
       template:
