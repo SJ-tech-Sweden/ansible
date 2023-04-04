@@ -16,6 +16,14 @@
   hosts: tags_proxmox
   tasks:
 
+  - name: 'Stop Container'
+    proxmox:
+      vmid: '{{ vmid }}'
+      api_user: '{{ api_user }}'
+      api_password: '{{ api_password }}'
+      api_host: '{{ api_host }}'
+      state: stopped
+
   - name: 'Delete Container'
     proxmox:
       vmid: '{{ vmid }}'

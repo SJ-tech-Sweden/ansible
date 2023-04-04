@@ -189,5 +189,7 @@
         primary_ip6: '{{ ipv6_adress }}'
       state: present
 
+  - meta: refresh_inventory
+
 - name: Install linux requirement
   ansible.builtin.import_playbook: linux-requirement.yml

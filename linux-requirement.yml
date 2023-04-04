@@ -1,9 +1,13 @@
 ---
+- name: Install linux requirement
+  ansible.builtin.import_playbook: linux-upgrade.yaml
+
 - hosts: tags_linux_servers
   pre_tasks:
     - name: include vault
       ansible.builtin.include_vars:
         file: secrets.yml
+
   tasks:
     - name: Update apt repo and cache on all Debian/Ubuntu boxes
       apt: update_cache=yes force_apt_get=yes cache_valid_time=3600

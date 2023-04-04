@@ -1,0 +1,40 @@
+---
+- name: Retrieve all services from NetBox
+  hosts: tags_caddy
+  gather_facts: no
+  vars_files:
+   - secrets.yml
+
+  vars:
+    netbox_url: "{{ netbox.url }}/api"
+    netbox_token: "{{ netbox.token }}"
+
+  tasks:
+    - name: Get all services
+      uri:
+        url: "{{ netbox_url }}/ipam/services/"
+        method: GET
+        headers:
+          accept: "application/json; indent=4"
+          authorization: "Token {{ netbox_token }}"
+        body_format: json
+      register: services_response
+      delegate_to: localhost
+
+    - name: Filter services by nginx custom field
+      set_fact:
+        netbox_services: "{{ services_response.json.results | json_query('[?custom_fields.nginx==`true`]') }}"
+      delegate_to: localhost
+
+    - name: Copy Caddyfile template
+      template:
+        src: templates/caddyfile.j2
+        dest: /root/Caddyfile
+      vars:
+        netbox_services: "{{ netbox_services }}"
+        caddy_admin: "admin off"
+
+    - name: Restart Docker Compose project
+      docker_compose:
+        project_src: /root/
+        restarted: true
