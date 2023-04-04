@@ -1,0 +1,16 @@
+{
+  {{ caddy_admin }}
+}
+{% for service in netbox_services %}
+{{ service.custom_fields.domain }} {
+  reverse_proxy {
+    to {{ service.ipaddresses[0].address | split('/') | first }}
+    {% if service.custom_fields.protocol_http == 'https' %}
+    transport http {
+      tls
+      tls_insecure_skip_verify
+    }
+    {% endif %}
+  }
+}
+{% endfor %}
