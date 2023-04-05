@@ -56,6 +56,9 @@
   - name: Create password in bitwarden
     local_action: raw bw get template item | jq ".name=\"{{ hostname }}\" | .login=$(bw get template item.login | jq '.username="{{ username }}" | .password="{{ password }}"')" | bw encode | bw create item
 
+  - name: Sync bitwarden
+    local_action: raw bw sync
+
   - name: 'Create Container'
     proxmox:
       #vmid: '300' # Specifying Container ID
@@ -97,6 +100,9 @@
   - name: 'Add ssh key'
     raw: 'pct push {{ proxmox_vm }} /root/.ssh/authorized_keys /root/.ssh/authorized_keys'
 
+  - debug:
+      var: proxmox_vm
+
   - name: Create virtual machine within NetBox with only required information
     local_action:
       module: netbox.netbox.netbox_virtual_machine
@@ -104,7 +110,7 @@
       netbox_token: "{{ netbox.token }}"
       data:
         name: '{{ hostname }}'
-        cluster: svs7-pv
+        cluster: sj-tech
         vcpus: '{{ cores }}'
         memory: '{{ memory }}'
         disk: '{{ disk }}'
@@ -114,6 +120,9 @@
         tags:
           - debian_containers
           - linux_servers
+        custom_fields:
+          #proxmox_id: "{{ proxmox_vm | int  }}"
+          proxmox_type: "lxc"
       state: present
 
   - name: Gather MAC address
@@ -188,6 +197,14 @@
         primary_ip4: '{{ ipv4_adress }}'
         primary_ip6: '{{ ipv6_adress }}'
       state: present
+
+  - name: 'restart Container'
+    proxmox:
+      vmid: '{{ proxmox_vm }}'
+      api_user: '{{ api_user }}'
+      api_password: '{{ api_password }}'
+      api_host: '{{ api_host }}'
+      state: restarted
 
   - meta: refresh_inventory
 

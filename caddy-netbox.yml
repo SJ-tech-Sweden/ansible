@@ -8,10 +8,7 @@
   vars:
     netbox_url: "{{ netbox.url }}/api"
     netbox_token: "{{ netbox.token }}"
-    cloudflare_api_key: "{{ cloudflare.account_api_key }}"
-    cloudflare_api_email: "{{ cloudflare.account_email }}"
-    cloudflare_zones_url: "https://api.cloudflare.com/client/v4/zones"
-
+    
   tasks:
     - name: Get all services from netbox
       uri:
@@ -29,8 +26,18 @@
         netbox_services: "{{ services_response.json.results | json_query('[?custom_fields.nginx==`true`]') }}"
       delegate_to: localhost
 
-    - debug:
-        var: netbox_services
+    - name: Make sure all domains in services has a cname
+      community.general.cloudflare_dns:
+        zone: "{{ item.custom_fields.domain.split('.')[-2] + '.' + item.custom_fields.domain.split('.')[-1] }}"
+        type: CNAME
+        record: "{{ item.custom_fields.domain }}"
+        value: "{{ cloudflare.default_cname }}" 
+        account_email: "{{ cloudflare.account_email }}"
+        account_api_key: "{{ cloudflare.account_api_key }}"
+        state: present
+      ignore_errors: true
+      loop: "{{ netbox_services }}"
+      delegate_to: localhost
 
     - name: Copy Caddyfile template
       template:
