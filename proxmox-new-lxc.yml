@@ -198,13 +198,20 @@
         primary_ip6: '{{ ipv6_adress }}'
       state: present
 
-  - name: 'restart Container'
+  - name: 'Restart Container'
     proxmox:
       vmid: '{{ proxmox_vm }}'
       api_user: '{{ api_user }}'
       api_password: '{{ api_password }}'
       api_host: '{{ api_host }}'
       state: restarted
+
+  - name: Wait for container to come back online
+    wait_for_connection:
+      host: "{{ hostname }}"
+      port: 22
+      delay: 10
+      timeout: 300
 
   - meta: refresh_inventory
 
