@@ -1,9 +1,11 @@
 ---
-- hosts: netbox
+- hosts: tags_netbox
   pre_tasks:
     - name: include vault
       ansible.builtin.include_vars:
         file: secrets.yml
+  vars:
+    vm_id: 105
   tasks:
     - name: Create new container snapshot
       local_action:
@@ -11,7 +13,7 @@
         api_user: "{{ proxmox.api_user }}"
         api_password: "{{ proxmox.api_password }}"
         api_host: "{{ proxmox.api_host }}"
-        vmid: "{{ proxmox.vm_id }}"
+        vmid: "{{ vm_id }}"
         state: present
         snapname: pre-netbox-upgrades
 
