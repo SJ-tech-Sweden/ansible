@@ -26,6 +26,51 @@
         netbox_services: "{{ services_response.json.results | json_query('[?custom_fields.nginx==`true`]') }}"
       delegate_to: localhost
 
+    - name: Set unifi ip_addresses
+      set_fact:
+        service_ips: []
+      delegate_to: localhost
+
+    - name: Process netbox_services
+      set_fact:
+        service_ips: "{{ service_ips + [{ 'ip_or_subnet': item.ipaddresses[0].address.split('/')[0], 'ip_version': 'v4', 'ports': item.ports }] }}"
+      delegate_to: localhost
+      loop: "{{ netbox_services }}"
+
+    - name: Provisioning (Authenticating)
+      uri:
+        url: https://{{ unifi.controller_ip }}/api/auth/login
+        method: POST
+        validate_certs: false
+        body_format: json
+        body: '{"username": "{{ unifi.username }}", "password": "{{ unifi.password }}"}'
+      register: logincookie
+
+    - name: Creating trafficrules
+      uri:
+        url: https://{{ unifi.controller_ip }}/proxy/network/v2/api/site/default/trafficrules/{{  caddy.traffic_rule_id }}/
+        method: PUT
+        validate_certs: false
+        headers:
+          Cookie: "{{ logincookie.cookies_string }}"
+          X-CSRF-Token: "{{ logincookie['x_csrf_token'] }}"
+        body_format: json
+        body:
+          action: "ALLOW"
+          description: "Netbox proxy to server"
+          enabled: true
+          ip_addresses: "{{ service_ips | unique }}"
+          matching_target: "IP"
+          target_devices:
+          - client_mac: "{{ caddy.server_mac }}"
+            type: "CLIENT"
+
+
+      register: unifi_client
+
+    - debug:
+        var: unifi_client
+
     - name: Make sure all domains in services has a cname
       community.general.cloudflare_dns:
         zone: "{{ item.custom_fields.domain.split('.')[-2] + '.' + item.custom_fields.domain.split('.')[-1] }}"
@@ -46,6 +91,9 @@
       vars:
         netbox_services: "{{ netbox_services }}"
         caddy_admin: "admin off"
+
+    - debug:
+        var: netbox_services
 
     - name: Restart Docker Compose project
       docker_compose:
