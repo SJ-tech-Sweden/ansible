@@ -25,5 +25,5 @@
   - role: claranet.motd
     motd_template: "{{ playbook_dir }}/templates/dynmotd.j2"
 
-- name: Install linux requirement
+- name: Netbox upgrade
   ansible.builtin.import_playbook: netbox-upgrade.yml

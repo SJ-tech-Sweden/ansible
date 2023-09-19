@@ -23,13 +23,12 @@
         git checkout master
       args:
         chdir: /opt/netbox
-        warn: no
 
     - name: Pull origin
       ansible.builtin.shell: git pull origin master
       args:
         chdir: /opt/netbox
-        warn: no
+        
 
     - name: Run upgrade script
       ansible.builtin.shell:  ./upgrade.sh

@@ -1,6 +1,7 @@
 {
   {{ caddy_admin }}
 }
+
 {% for service in netbox_services %}
 {{ service.custom_fields.domain }} {
   reverse_proxy {

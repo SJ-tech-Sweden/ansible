@@ -12,7 +12,7 @@
     ostemplate: 'truenas:vztmpl/debian-11-standard_11.3-1_amd64.tar.zst' # Or use local:vztmpl/... as discussed
     storage: 'truenas' # Or use 'local' as discussed
     username: root #username to save in bitwarden
-    vrf: "{{ netbox.vrf }} "
+    vrf: "{{ netbox.vrf }}"
 
   vars_prompt:
     - name: hostname
@@ -40,7 +40,7 @@
 
     - name: netif
       prompt: What network conf should the server have?
-      default: '{"net0":"name=eth0,ip=dhcp,ip6=dhcp,bridge=vmbr0"}'
+      default: '{"net0":"name=eth0,ip=dhcp,ip6=dhcp,bridge=vmbr0,tag=200"}'
       private: false
       unsafe: true
 
@@ -198,45 +198,45 @@
         primary_ip6: '{{ ipv6_adress }}'
       state: present
 
-   - name: Unifi - Provisioning (Authenticating)
-     uri:
-       url: https://{{ unifi.controller_ip }}/api/auth/login
-       method: POST
-       validate_certs: false
-       body_format: json
-       body: '{"username": "{{ unifi.username }}", "password": "{{ unifi.password }}"}'
-     register: logincookie
+  - name: Unifi - Provisioning (Authenticating)
+    uri:
+      url: https://{{ unifi.controller_ip }}/api/auth/login
+      method: POST
+      validate_certs: false
+      body_format: json
+      body: '{"username": "{{ unifi.username }}", "password": "{{ unifi.password }}"}'
+    register: logincookie
 
-   - name: Unifi - Getting clients
-     uri:
-       url: https://{{ unifi.controller_ip }}/proxy/network/api/s/default/rest/user
-       method: GET
-       validate_certs: false
-       headers:
-         Cookie: "{{ logincookie.cookies_string }}"
-     register: unifi_users
-
-
-   - name: Unifi - Find client ID from MAC address in network
-     set_fact:
-       client_id: "{{ item['_id'] }}"
-     loop: "{{ unifi_users.json['data'] }}"
-     when: item['mac'] == mac_address
+  - name: Unifi - Getting clients
+    uri:
+      url: https://{{ unifi.controller_ip }}/proxy/network/api/s/default/rest/user
+      method: GET
+      validate_certs: false
+      headers:
+        Cookie: "{{ logincookie.cookies_string }}"
+    register: unifi_users
 
 
-   - name: Unifi - Setting fixed ip
-     uri:
-       url: https://{{ unifi.controller_ip }}/proxy/network/api/s/default/rest/user/{{ client_id }}
-       method: PUT
-       validate_certs: false
-       headers:
-         Cookie: "{{ logincookie.cookies_string }}"
-         X-CSRF-Token: "{{ logincookie['x_csrf_token'] }}"
-       body_format: json
-       body:
-         fixed_ip: {{ ipv4_adress }}
-         use_fixedip: true
-     register: unifi_user
+  - name: Unifi - Find client ID from MAC address in network
+    set_fact:
+      client_id: "{{ item['_id'] }}"
+    loop: "{{ unifi_users.json['data'] }}"
+    when: item['mac'] == mac_address
+
+
+  - name: Unifi - Setting fixed ip
+    uri:
+      url: https://{{ unifi.controller_ip }}/proxy/network/api/s/default/rest/user/{{ client_id }}
+      method: PUT
+      validate_certs: false
+      headers:
+        Cookie: "{{ logincookie.cookies_string }}"
+        X-CSRF-Token: "{{ logincookie['x_csrf_token'] }}"
+      body_format: json
+      body:
+        fixed_ip: "{{ ipv4_adress }}"
+        use_fixedip: true
+    register: unifi_user
 
 
   - name: 'Restart Container'

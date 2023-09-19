@@ -37,7 +37,7 @@
       delegate_to: localhost
       loop: "{{ netbox_services }}"
 
-    - name: Provisioning (Authenticating)
+    - name: Authenticating to Unifi
       uri:
         url: https://{{ unifi.controller_ip }}/api/auth/login
         method: POST

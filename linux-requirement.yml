@@ -1,5 +1,5 @@
 ---
-- name: Install linux requirement
+- name: Install linux updates
   ansible.builtin.import_playbook: linux-upgrade.yaml
 
 - hosts: tags_linux_servers
@@ -31,6 +31,10 @@
     - name: Install rsyslog
       apt:
        name: rsyslog
+
+    - name: Install etckeeper
+      apt:
+       name: etckeeper
 
     - name: Start service rsyslog, if not started
       ansible.builtin.service:
@@ -64,3 +68,6 @@
         name: zabbix-agent
         state: restarted
         enabled: true
+
+- name: Install docker reuirements
+  ansible.builtin.import_playbook: docker-requirements.yml
